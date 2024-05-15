@@ -71,7 +71,7 @@ def YOLO_processing(img):
 # def firebase_processing():
 
 
-
+#elonmusk was here
 
 # cap= cv2.VideoCapture("D:/codes/YOLOv8/chapter6-Webcam/cars.mp4") #for video
 # cap= cv2.VideoCapture(0)

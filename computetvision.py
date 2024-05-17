@@ -34,10 +34,11 @@ def YOLO_processing(img):
             max_conf=0.9
             cls = int(box.cls[0])
             # showing class name and conf on img
-            cvzone.cornerRect(img, (x1, y1, w, h))
-            cvzone.putTextRect(img, f'{classNames[cls]} {conf}', (max(0, x1), max(35, y1)), scale=0.9, thickness=2)
+            if conf > 0.8:
+                cvzone.cornerRect(img, (x1, y1, w, h))
+                cvzone.putTextRect(img, f'{classNames[cls]} {conf}', (max(0, x1), max(35, y1)), scale=0.9, thickness=2)
             # showing classes name
-            cls = box.cls[0]
+                cls = box.cls[0]
             if conf >= max_conf:
                 max_conf=conf
                 center_of_box=x1 + (w // 2)
@@ -71,7 +72,7 @@ def YOLO_processing(img):
 # def firebase_processing():
 
 
-#elonmusk was here
+
 
 # cap= cv2.VideoCapture("D:/codes/YOLOv8/chapter6-Webcam/cars.mp4") #for video
 # cap= cv2.VideoCapture(0)
@@ -80,11 +81,11 @@ cap.set(3,640)
 cap.set(4,480)
 print("captured")
 #creating the model with nano weights
-model = YOLO("../YOLO-weights/bestboxesv5n.pt")
+model = YOLO("../YOLO-weights/newlibrarytrain.pt")
 
 
 #coco dataset based on id number of detected object if id=0 then person detected if 1 bicycle and so on
-classNames = ['carton']
+classNames = ['BIODEGRADABLE', 'CARDBOARD', 'METAL', 'PAPER', 'PLASTIC', 'cardboard']
 
 
 print("before loop")     

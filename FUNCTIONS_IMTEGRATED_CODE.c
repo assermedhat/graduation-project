@@ -137,9 +137,12 @@ IR();
 Serial.println("suiiiiiii");
 
 delay(10);
-RFID();
 
-
+mfrc522.PICC_ReadCardSerial();
+if (mfrc522.PICC_IsNewCardPresent())
+  {
+  RFID();
+  }
 
 
 }
@@ -382,22 +385,26 @@ void pumpON()
 }
 void RFID()
 {
+   Serial.println("a7a");
+  // bool output1=mfrc522.PICC_IsNewCardPresent();
   // Serial.println("a7a");
-  bool output1=mfrc522.PICC_IsNewCardPresent();
-  Serial.println("a7a");
-  bool output2=mfrc522.PICC_ReadCardSerial();
-  Serial.println(output2);
-  bool inside=((!output1) || (!output2));
-  Serial.println(inside);
-  if ( inside ) {
-    delay(50);
-    Serial.println("7amooooo");
-    //return;
-  }
+  // bool output2=mfrc522.PICC_ReadCardSerial();
+  // Serial.println(output2);
+  // bool inside=((!output1) || (!output2));
+  // Serial.println(inside);
+  // mfrc522.PICC_ReadCardSerial();
+
+
+
+  // if (!mfrc522.PICC_IsNewCardPresent()) {
+  //   delay(50);
+  //   Serial.println("7amooooo");
+  //   return;
+  // }
   
 
   // Show UID on serial monitor
-  // Serial.print("UID tag :");
+  Serial.print("UID tag :");
   String content= "";
   byte letter;
   for (byte i = 0; i < mfrc522.uid.size; i++) {

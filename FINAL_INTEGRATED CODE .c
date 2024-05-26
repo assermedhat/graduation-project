@@ -12,6 +12,7 @@ int targ[3];
 int dir[2];
 int path[2];
 
+bool NEW_CARD;
 bool done_flag=0; //flags when the robot has done pick up or delivery from/to shelf
 bool at_targ=0;   //flags when in target position 
 
@@ -70,7 +71,7 @@ void gripperON();
 void gripperOFF();
 void pumpON();
 void RFID();
-bool IR();
+void IR();
 int calibration();
 void NAV();
 
@@ -141,6 +142,15 @@ void setup() {
   mfrc522.PCD_Init();           // Init MFRC522
   Serial.println("RFID reader initialized.");
   //end
+
+  // targ[]={4,2,0};
+  targ[0]=4;
+  targ[1]=2;
+  targ[0]=0;
+  // pos[]={4,1};
+  pos[0]=4;
+  pos[1]=1;
+
 }
 
 
@@ -407,6 +417,8 @@ void RFID()
 prev[0]=pos[0];
 prev[1]=pos[1];
 
+NEW_CARD=1;
+
 // Show UID on serial monitor
 Serial.print("UID tag :");
 String content= "";
@@ -553,56 +565,57 @@ path[1]=targ[1]-pos[1];
 
 
 
-delay(500);
+// delay(500);
 
 }
 
-bool IR()
+void IR()
 {  
-  Serial.println(sensorValues[0]);
-        Input = qtr.readLineBlack(sensorValues);
-        Serial.println(Input);
+  
+  // Read the sensor values and print the first sensor value for debugging
+    qtr.read(sensorValues);
+    Serial.println(sensorValues[0]);
 
-        //getDistance();
-        //delay(10);
-        myPID.Compute();
-        //getDistance();  
-        Serial.println(Output);
-        
+    // Read the line position using the sensors
+    Input = qtr.readLineBlack(sensorValues);
+    Serial.println(Input);
 
-        //straight
-        if ((Output < 4) & (Output > -4)) {
+    // Compute the PID output
+    myPID.Compute();
+    Serial.println(Output);
 
-
-        forward();
-        Serial.println("center");
-
+    // Check if all sensors read a low value indicating no line detected
+    bool noLineDetected = true;
+    for (uint8_t i = 0; i < SensorCount; i++) {
+        if (sensorValues[i] > 200) { // Adjust the threshold value as needed
+            noLineDetected = false;
+            break;
         }
+    }
 
-        //LEFT
-        else if (Output > 4) {
-          
-          turnR();
-           Serial.println("Right");
-          // motorBD.setSpeed((195) + abs(Output));
-          // motorBD.forward();
-          // motorAC.setSpeed(30 + abs(Output));
-          // motorAC.backward();
-
-        }
-
-        //turn RIGHT
-        else if (Output < -4) {
-
-          turnL();
-          Serial.println("Left");
-          // motorAC.setSpeed((195) + abs(Output));
-          // motorAC.forward();
-          // motorBD.setSpeed(30 + abs(Output));
-          // motorBD.backward();
-        }
+    // If no line is detected, move forward
+    if (noLineDetected) {
       
-        return 1;
+        Serial.println("No line detected, moving forward.");
+        forward();
+    }
+    // Otherwise, adjust the direction based on the PID output
+    else {
+        // Go straight if the output is within a small range around zero
+        if (Output < 4 && Output > -4) {
+            forward();
+        }
+        // Turn right if the output is greater than 4
+        else if (Output > 4) {
+            turnR();
+        }
+        // Turn left if the output is less than -4
+        else if (Output < -4) {
+            turnL();
+        }
+    }      
+    
+
         }
   
 int calibration(){
@@ -650,23 +663,24 @@ int calibration(){
   }
 
 void NAV(){
-  
+Serial.println("NAV1");  
 
-if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
+if (NEW_CARD==0 ) {
   delay(50);
   return;
 }
 
+Serial.println("NAV2");
   if ((done_flag == 1) && (at_targ == 1))   //moving out of place after pickup or delivery
   {
     back();
     _delay_ms(1000);
-  Serial.println("95");
+    Serial.println("95");
 
     if (path[0] > 0)    // rotate left 90 degree
     {
       spinL();
-      _delay_ms(500);
+      _delay_ms(2000);
       Serial.println("101");
 
     }
@@ -674,7 +688,7 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     else if (path[0] < 0)      //rotate right 90 degree
     {
       spinR();
-      _delay_ms(500);
+      _delay_ms(2000);
       Serial.println("109");
     }
 
@@ -683,14 +697,14 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
       if (pos[0]==2 || pos[0]==3)
       {
         spinR();
-      _delay_ms(500);
+      _delay_ms(2000);
       Serial.println("118");
       }
 
       else if (pos[0] == 4)
       {
         spinL();
-      _delay_ms(500);
+      _delay_ms(2000);
       Serial.println("124");
       }
 
@@ -698,11 +712,11 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     }
 
   
-  forward();
-  _delay_ms(500);
-  Serial.println("134");
+    forward();
+   _delay_ms(2000);
+    Serial.println("134");
 
-  at_targ=0;
+   at_targ=0;
   }
 
 
@@ -784,15 +798,15 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
       if (targ[1]==2)
       {
         spinL();
-        _delay_ms(500);
+        _delay_ms(2000);
         forward();
-        _delay_ms(500);
+        _delay_ms(2000);
       }
 
       if (targ[1]!=2)
       {
         forward();
-        _delay_ms(500);
+        _delay_ms(2000);
       }
   }
 
@@ -801,15 +815,15 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     if (targ[1]==2)
     {
       spinR();
-      _delay_ms(500);
+      _delay_ms(2000);
       forward();
-      _delay_ms(500);
+      _delay_ms(2000);
     }
 
     if (targ[1]!=2)
     {
       forward();
-      _delay_ms(500);      
+      _delay_ms(2000);      
     } 
 
   }
@@ -819,15 +833,15 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     if (targ[1]==2)
     {
       spinR();
-      _delay_ms(500);
+      _delay_ms(2000);
       forward();
-      _delay_ms(500);
+      _delay_ms(2000);
     }
 
     if (targ[1]!=2)
     {
       forward();
-      _delay_ms(500);      
+      _delay_ms(2000);      
     }     
   }
 
@@ -836,15 +850,15 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
       if (targ[1]==2)
       {
         spinL();
-        _delay_ms(500);
+        _delay_ms(2000);
         forward();
-        _delay_ms(500);
+        _delay_ms(2000);
       }
 
       if (targ[1]!=2)
       {
         forward();
-        _delay_ms(500);
+        _delay_ms(2000);
       }    
   }
 
@@ -854,7 +868,7 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     if (dir[0] > 0)
     {
       spinR();
-      _delay_ms(500);
+      _delay_ms(2000);
       forward();
       _delay_ms(100);
       //while(distance < 7);
@@ -866,7 +880,7 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     else if (dir[0] < 0)
     {
       spinL();
-      _delay_ms(500);
+      _delay_ms(2000);
       forward();
       _delay_ms(100);
       //while(distance < 7);
@@ -876,8 +890,8 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
     }
 
   }
-
-
+NEW_CARD=0;
+  
 }
 
 // float getDistance() {
@@ -892,3 +906,4 @@ if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
 //   Serial.println(distance);
 //   return distance;
 // }
+

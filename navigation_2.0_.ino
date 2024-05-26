@@ -2,6 +2,8 @@
 // int prev[2];
 // int targ[3]; //firebase x,y,z
 
+
+
 int pos[]={5,2};
 int  prev[]={4,1};
 int  targ[]={4,2,0};

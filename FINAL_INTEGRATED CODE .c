@@ -74,6 +74,7 @@ void RFID();
 void IR();
 int calibration();
 void NAV();
+void database_comm();
 
 double Setpoint = 2500;
 double Input, Output;
@@ -892,6 +893,27 @@ Serial.println("NAV2");
   }
 NEW_CARD=0;
   
+}
+void database_comm(){
+  if (Serial.available()) {
+    String data = Serial.readStringUntil('\n');
+    int xpos = data.substring(0, data.indexOf(',')).toInt();
+    data.remove(0, data.indexOf(',') + 1);
+    int ypos = data.substring(0, data.indexOf(',')).toInt();
+    data.remove(0, data.indexOf(',') + 1);
+    int zpos = data.toInt();
+    
+    //Do something with xpos, ypos, zpos
+    //For example, print them to Serial Monitor
+    Serial.print("Received X pos: ");
+    Serial.println(xpos);
+    Serial.print("Received Y pos: ");
+    Serial.println(ypos);
+    // Serial.print("Received Z pos: ");
+    Serial.println(zpos);
+    targ[0]=xpos;
+    targ[1]=ypos;
+    targ[2]=zpos;
 }
 
 // float getDistance() {

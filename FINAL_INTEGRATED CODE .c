@@ -24,6 +24,7 @@ String receivedMessage = "";
 #define MAX 255
 #define MIN 0
 #define SVar 0.3
+#define spin_delay 1200
 
 #define RST_PIN     8          // Reset pin
 #define SS_PIN      9          // Slave select pin
@@ -147,7 +148,7 @@ void setup() {
   // targ[]={4,2,0};
   targ[0]=4;
   targ[1]=2;
-  targ[0]=0;
+  targ[3]=0;
   // pos[]={4,1};
   pos[0]=4;
   pos[1]=1;
@@ -156,6 +157,26 @@ void setup() {
 
 
 void loop() {
+
+  Serial.println("TARGET:");
+  Serial.print(targ[0]);
+  Serial.print(",");
+  Serial.print(targ[1]);
+
+  Serial.println("POS:");
+  Serial.print(pos[0]);
+  Serial.print(",");
+  Serial.print(pos[1]);
+
+  Serial.println("PATH:");
+  Serial.print(path[0]);
+  Serial.print(",");
+  Serial.print(path[1]);
+
+  Serial.println("DIRECTION:");
+  Serial.print(dir[0]);
+  Serial.print(",");
+  Serial.print(dir[1]);
 //Calling IR function 
 
 IR();
@@ -227,10 +248,10 @@ void back()
 void forward()
  {
   
-  analogWrite(RPWM, MAX);
-  analogWrite(LPWM,MIN);
+  analogWrite(RPWM,0.5* MAX);
+  analogWrite(LPWM,0.5*MIN);
 
-  analogWrite(RPWM2, MAX);
+  analogWrite(RPWM2,0.5* MAX);
   analogWrite(LPWM2,MIN);
 
   analogWrite(RPWMS, MIN);
@@ -663,6 +684,8 @@ int calibration(){
   return 1;
   }
 
+
+
 void NAV(){
 Serial.println("NAV1");  
 
@@ -675,22 +698,19 @@ Serial.println("NAV2");
   if ((done_flag == 1) && (at_targ == 1))   //moving out of place after pickup or delivery
   {
     back();
-    _delay_ms(1000);
-    Serial.println("95");
+    _delay_ms(spin_delay);
 
     if (path[0] > 0)    // rotate left 90 degree
     {
       spinL();
-      _delay_ms(2000);
-      Serial.println("101");
+      _delay_ms(spin_delay);
 
     }
 
     else if (path[0] < 0)      //rotate right 90 degree
     {
       spinR();
-      _delay_ms(2000);
-      Serial.println("109");
+      _delay_ms(spin_delay);
     }
 
     else if (path[0] == 0)   //for cases where target is on the same x-line as position
@@ -698,15 +718,13 @@ Serial.println("NAV2");
       if (pos[0]==2 || pos[0]==3)
       {
         spinR();
-      _delay_ms(2000);
-      Serial.println("118");
+      _delay_ms(spin_delay);
       }
 
       else if (pos[0] == 4)
       {
         spinL();
-      _delay_ms(2000);
-      Serial.println("124");
+      _delay_ms(spin_delay);
       }
 
 
@@ -714,8 +732,7 @@ Serial.println("NAV2");
 
   
     forward();
-   _delay_ms(2000);
-    Serial.println("134");
+   _delay_ms(spin_delay);
 
    at_targ=0;
   }
@@ -799,15 +816,15 @@ Serial.println("NAV2");
       if (targ[1]==2)
       {
         spinL();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
         forward();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
       }
 
       if (targ[1]!=2)
       {
         forward();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
       }
   }
 
@@ -816,15 +833,15 @@ Serial.println("NAV2");
     if (targ[1]==2)
     {
       spinR();
-      _delay_ms(2000);
+      _delay_ms(spin_delay);
       forward();
-      _delay_ms(2000);
+      _delay_ms(spin_delay);
     }
 
     if (targ[1]!=2)
     {
       forward();
-      _delay_ms(2000);      
+      _delay_ms(spin_delay);      
     } 
 
   }
@@ -834,15 +851,15 @@ Serial.println("NAV2");
     if (targ[1]==2)
     {
       spinR();
-      _delay_ms(2000);
+      _delay_ms(spin_delay);
       forward();
-      _delay_ms(2000);
+      _delay_ms(spin_delay);
     }
 
     if (targ[1]!=2)
     {
       forward();
-      _delay_ms(2000);      
+      _delay_ms(spin_delay);      
     }     
   }
 
@@ -851,15 +868,15 @@ Serial.println("NAV2");
       if (targ[1]==2)
       {
         spinL();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
         forward();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
       }
 
       if (targ[1]!=2)
       {
         forward();
-        _delay_ms(2000);
+        _delay_ms(spin_delay);
       }    
   }
 
@@ -869,25 +886,25 @@ Serial.println("NAV2");
     if (dir[0] > 0)
     {
       spinR();
-      _delay_ms(2000);
-      forward();
-      _delay_ms(100);
+      _delay_ms(spin_delay);
+      stop();
+      _delay_ms(10000);
       //while(distance < 7);
       //stop();
       at_targ=1;
-      Serial.println("225");
     }
 
     else if (dir[0] < 0)
     {
       spinL();
-      _delay_ms(2000);
-      forward();
-      _delay_ms(100);
+      Serial.println("at target");
+      _delay_ms(spin_delay);
+      stop();
+      _delay_ms(10000);
+      Serial.println("done rotating");
       //while(distance < 7);
       //stop();
       at_targ=1;
-      Serial.println("237");
     }
 
   }
@@ -915,7 +932,7 @@ void database_comm(){
     targ[1]=ypos;
     targ[2]=zpos;
 }
-
+}
 // float getDistance() {
 //   digitalWrite(trig, LOW);
 //   delayMicroseconds(5);
@@ -928,4 +945,3 @@ void database_comm(){
 //   Serial.println(distance);
 //   return distance;
 // }
-

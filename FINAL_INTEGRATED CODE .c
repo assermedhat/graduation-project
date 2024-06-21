@@ -25,6 +25,7 @@ String receivedMessage = "";
 #define MIN 0
 #define SVar 0.3
 #define spin_delay 1200
+#define flag_p 0
 
 #define RST_PIN     8          // Reset pin
 #define SS_PIN      9          // Slave select pin
@@ -146,11 +147,11 @@ void setup() {
   //end
 
   // targ[]={4,2,0};
-  targ[0]=4;
-  targ[1]=2;
-  targ[3]=0;
+  // targ[0]=4;
+  // targ[1]=2;
+  // targ[3]=0;
   // pos[]={4,1};
-  pos[0]=4;
+  pos[0]=2;
   pos[1]=1;
 
 }
@@ -158,27 +159,31 @@ void setup() {
 
 void loop() {
 
-  Serial.println("TARGET:");
-  Serial.print(targ[0]);
-  Serial.print(",");
-  Serial.print(targ[1]);
+  // Serial.println("TARGET:");
+  // Serial.print(targ[0]);
+  // Serial.print(",");
+  // Serial.print(targ[1]);
 
-  Serial.println("POS:");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
+  // Serial.println("POS:");
+  // Serial.print(pos[0]);
+  // Serial.print(",");
+  // Serial.print(pos[1]);
 
-  Serial.println("PATH:");
-  Serial.print(path[0]);
-  Serial.print(",");
-  Serial.print(path[1]);
+  // Serial.println("PATH:");
+  // Serial.print(path[0]);
+  // Serial.print(",");
+  // Serial.print(path[1]);
 
-  Serial.println("DIRECTION:");
-  Serial.print(dir[0]);
-  Serial.print(",");
-  Serial.print(dir[1]);
-//Calling IR function 
-
+  // Serial.println("DIRECTION:");
+  // Serial.print(dir[0]);
+  // Serial.print(",");
+  // Serial.print(dir[1]);
+//Calling IR function
+if(pos[0]==2&&pos[1]==1&&flag_p==0]) {
+  database_comm();
+  flag_p==1;  
+}
+database_comm();
 IR();
 
 //implementing the RFID

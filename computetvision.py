@@ -7,7 +7,7 @@ import threading
 import time
 first_time = True
 
-# ser = serial.Serial('COM8', 9600, timeout=1)   #serial object initiation
+ser = serial.Serial('COM8', 9600, timeout=1)   #serial object initiation
 
 
 def YOLO_processing(img):
@@ -31,7 +31,7 @@ def YOLO_processing(img):
             # cv2.rectangle(img,(x1,y1),(x2,y2),(0,255,0),3)
             # fancy reactangle of cvzone
             conf = (math.ceil(box.conf[0] * 100)) / 100
-            max_conf=0.9
+            max_conf=0.85
             cls = int(box.cls[0])
             # showing class name and conf on img
             if conf > 0.8:
@@ -44,23 +44,24 @@ def YOLO_processing(img):
                 center_of_box=x1 + (w // 2)
                 print(center_of_box)
                 cv2.line(img, (x1 + (w // 2), y1), (x1 + (w // 2), y1 + h), (255, 0, 0), 3)
-                if (center_of_box) > 320 and (center_of_box) <= 640:
+                if (center_of_box) > 340 and (center_of_box) <= 640:
                     start_time = 0
                     cv2.putText(img, "box Right", (center_of_box + 100, y1 + (h // 2) + 50),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
-                    # ser.write(b'R')  # Sending 'R' for right
+                    ser.write(b'r')  # Sending 'R' for right
                     print("right")
-                elif (center_of_box) < 320 and (center_of_box) > 0:
+                elif (center_of_box) < 300 and (center_of_box) > 0:
                     cv2.putText(img, "box Left", (center_of_box + 100, y1 + (h // 2) + 50),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
-                    # ser.write(b'L')
+                    ser.write(b'l')
                     print("left")
-                elif(center_of_box)==320:
+                elif (center_of_box)<340 and (center_of_box)>300:
                     cv2.putText(img, "box center", (center_of_box + 100, y1 + (h // 2) + 50),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
                     print("center")
-                else:
-                    print("stop")
+                    ser.write(b'c')
+                # else:
+                #     print("stop")
 
 
                 # getting confidence level of BB

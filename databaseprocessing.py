@@ -4,7 +4,7 @@ import serial
 import time
 
 #create serial object
-arduino=serial.Serial('COM5',9600)
+arduino=serial.Serial('COM8',9600)
 time.sleep(2)
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("react-native-course-778b3-firebase-adminsdk-9n608-7b23871db3.json")  # Replace with your path

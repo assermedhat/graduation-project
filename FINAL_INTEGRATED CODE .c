@@ -1,4 +1,5 @@
 
+
 #include <QTRSensors.h>
 #include <PID_v1.h>
 // #include <L298NX2.h>
@@ -11,6 +12,9 @@ int prev[2];
 int targ[3];
 int dir[2];
 int path[2];
+
+//box flag
+bool box_flag = 0;   // 0 then there is no box, 1 there is box
 
 bool NEW_CARD;
 bool done_flag=0; //flags when the robot has done pick up or delivery from/to shelf
@@ -31,6 +35,23 @@ String receivedMessage = "";
 #define SS_PIN      9          // Slave select pin
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
+
+//limit swtches
+int open_S = 39;
+int open_S_S  ;
+
+int closed_S = 35;
+int closed_S_S ;
+
+int middle_S = 37;
+int middle_S_S ;
+
+//gripper limit switch;
+int open_G = 31 ;
+int open_G_S ;
+
+int closed_G = 33 ;
+int closed_G_S  ; 
 
 //Right motor drvier
 int LPWM = 7;
@@ -69,14 +90,21 @@ void spinL();
 void stop();
 void scissorsup();
 void scissorsdown();
-void gripperON();
-void gripperOFF();
+void scissoroff();
+void gripperon();
+void gripperoff();
+void gripperback();
 void pumpON();
+void pumpOFF();
 void RFID();
 void IR();
 int calibration();
 void NAV();
 void database_comm();
+void nos_fat7a_box();
+void nos_fat7a_no_box();
+void fat7a_box();
+void fat7a_no_box();
 
 double Setpoint = 2500;
 double Input, Output;
@@ -117,6 +145,15 @@ void setup() {
   pinMode(26, OUTPUT);
   pinMode(28, OUTPUT);
   //pinMode(26, OUTPUT);
+  //scissors ls
+  pinMode(35, INPUT);
+  pinMode(37, INPUT);
+  pinMode(39, INPUT);
+
+  //gripper limit switch
+
+  pinMode(33, INPUT);
+  pinMode(31, INPUT);
 
   //pump
   
@@ -131,7 +168,12 @@ void setup() {
   digitalWrite(L_ENS, HIGH);
 
 
-
+  pinMode(open_S, INPUT_PULLUP);
+  pinMode(closed_S, INPUT_PULLUP);
+  pinMode(middle_S, INPUT_PULLUP);
+  pinMode(open_G, INPUT_PULLUP);
+  pinMode(closed_G, INPUT_PULLUP);
+  pumpON();
 
 
   if(calibration()==1){
@@ -153,6 +195,9 @@ void setup() {
   // pos[]={4,1};
   pos[0]=2;
   pos[1]=1;
+  
+  // targ[0]=3;
+  // targ[1]=2;
 
 }
 
@@ -178,20 +223,28 @@ void loop() {
   // Serial.print(dir[0]);
   // Serial.print(",");
   // Serial.print(dir[1]);
-//Calling IR function
-if(pos[0]==2&&pos[1]==1&&flag_p==0]) {
+    // database_comm();
+// Calling IR function
+  if((pos[0]==2)&&(pos[1]==1) && (box_flag==0)) {
+          nos_fat7a_box();
+  //   break;   
+    }
   database_comm();
-  flag_p==1;  
-}
-database_comm();
-IR();
+  
+   
+  IR();
 
-//implementing the RFID
-RFID();
+  // //implementing the RFID
+  RFID();
 
-//implementing the navigation
-NAV();
-
+  // //implementing the navigation
+  NAV();
+  // while(1){
+  
+  // }
+  // else if(path[0]==0 && path[1]==0 && box_flag==1){
+  //   fat7a_no_box();
+  // }
 }
 
 void turnR()
@@ -321,8 +374,24 @@ void scissorsdown()
 
    digitalWrite(pump,LOW);
 }
+void scissorsoff()
+{
+  analogWrite(RPWM, MIN);
+  analogWrite(LPWM,MIN);
+  analogWrite(RPWM2, MIN);
+  analogWrite(LPWM2,MIN);
 
-void gripperON()
+  analogWrite(RPWMS, MIN);
+  analogWrite(LPWMS,MIN);
+
+
+  digitalWrite(MotorGripper1, LOW);
+  digitalWrite(MotorGripper2, LOW);
+
+ digitalWrite(pump,LOW);
+
+}
+void gripperon()
 {
    analogWrite(RPWM, MIN);
   analogWrite(LPWM,MIN);
@@ -334,15 +403,15 @@ void gripperON()
   
   
   
-  digitalWrite(MotorGripper1, HIGH);
-  digitalWrite(MotorGripper2, LOW);
+  digitalWrite(MotorGripper1, LOW);
+  digitalWrite(MotorGripper2, HIGH);
   //analogWrite(MotorGripperS, MAX);
 
  digitalWrite(pump,LOW);
 
 
 }
-void gripperOFF()
+void gripperoff()
 {
    analogWrite(RPWM, MIN);
   analogWrite(LPWM, MIN);
@@ -356,14 +425,34 @@ void gripperOFF()
   //gripper
 
   digitalWrite(MotorGripper1, LOW);
-  digitalWrite(MotorGripper2, HIGH);
+  digitalWrite(MotorGripper2, LOW);
   //analogWrite(MotorScissorsS, MAX);
 
   digitalWrite(pump,LOW);
 
 
 }
+void gripperback()
+{
+   analogWrite(RPWM, MIN);
+  analogWrite(LPWM, MIN);
+  analogWrite(RPWM2, MIN);
+  analogWrite(LPWM2, MIN);
 
+  analogWrite(RPWMS, MIN);
+  analogWrite(LPWMS, MIN);
+  
+  
+  //gripper
+
+  digitalWrite(MotorGripper1, HIGH);
+  digitalWrite(MotorGripper2, LOW);
+  //analogWrite(MotorScissorsS, MAX);
+
+  digitalWrite(pump,LOW);
+
+
+}
 void spinR()
  {
   analogWrite(RPWM, MIN);
@@ -440,159 +529,159 @@ void RFID()
   if ( ! mfrc522.PICC_IsNewCardPresent() || ! mfrc522.PICC_ReadCardSerial() ) {
   delay(50);
   return;
-}
-prev[0]=pos[0];
-prev[1]=pos[1];
+  }
+  prev[0]=pos[0];
+  prev[1]=pos[1];
 
-NEW_CARD=1;
+  NEW_CARD=1;
 
-// Show UID on serial monitor
-Serial.print("UID tag :");
-String content= "";
-byte letter;
-for (byte i = 0; i < mfrc522.uid.size; i++) {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
-    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
-    content.concat(String(mfrc522.uid.uidByte[i], HEX));
-}
-Serial.println();
-Serial.print("Message : ");
-content.toUpperCase();
-
-
-if (content.substring(1) == "5D 97 58 89") { // Change to match your UID
-  pos[0]=1;
-  pos[1]=2;
-  
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
+  // Show UID on serial monitor
+  Serial.print("UID tag :");
+  String content= "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+      Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+      Serial.print(mfrc522.uid.uidByte[i], HEX);
+      content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+      content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
   Serial.println();
+  Serial.print("Message : ");
+  content.toUpperCase();
 
 
-  // Add your actions here for authorized access
-}
-else if (content.substring(1) == "4D 12 77 89"){
-  pos[0]=2;
-  pos[1]=1;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "4D FC 54 89"){
-  pos[0]=2;
-  pos[1]=2;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "DD F4 79 89"){
-  pos[0]=2;
-  pos[1]=3;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "6D 2E 7D 89"){
-  pos[0]=3;
-  pos[1]=1;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "6D 75 75 89"){
-  pos[0]=3;
-  pos[1]=2;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "1D CA 76 89"){
-  pos[0]=3;
-  pos[1]=3;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "3D BF 79 89"){
-  pos[0]=4;
-  pos[1]=1;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "DD 5E 59 89"){
-  pos[0]=4;
-  pos[1]=2;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "ED F5 57 89"){
-  pos[0]=4;
-  pos[1]=3;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-else if (content.substring(1) == "90 A4 EA 32"){
-  pos[0]=5;
-  pos[1]=2;
-
-  Serial.println("pos = ");
-  Serial.print(pos[0]);
-  Serial.print(",");
-  Serial.print(pos[1]);
-  Serial.println();
-}
-
-dir[0]=pos[0]-prev[0];
-dir[1]=pos[1]-prev[1];
-
-path[0]=targ[0]-pos[0];
-path[1]=targ[1]-pos[1];
+  if (content.substring(1) == "5D 97 58 89") { // Change to match your UID
+    pos[0]=1;
+    pos[1]=2;
+    
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
 
 
+    // Add your actions here for authorized access
+  }
+  else if (content.substring(1) == "4D 12 77 89"){
+    pos[0]=2;
+    pos[1]=1;
 
-// delay(500);
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "4D FC 54 89"){
+    pos[0]=2;
+    pos[1]=2;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "DD F4 79 89"){
+    pos[0]=2;
+    pos[1]=3;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "6D 2E 7D 89"){
+    pos[0]=3;
+    pos[1]=1;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "6D 75 75 89"){
+    pos[0]=3;
+    pos[1]=2;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "1D CA 76 89"){
+    pos[0]=3;
+    pos[1]=3;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "3D BF 79 89"){
+    pos[0]=4;
+    pos[1]=1;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "DD 5E 59 89"){
+    pos[0]=4;
+    pos[1]=2;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "ED F5 57 89"){
+    pos[0]=4;
+    pos[1]=3;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  else if (content.substring(1) == "90 A4 EA 32"){
+    pos[0]=5;
+    pos[1]=2;
+
+    Serial.println("pos = ");
+    Serial.print(pos[0]);
+    Serial.print(",");
+    Serial.print(pos[1]);
+    Serial.println();
+  }
+
+  dir[0]=pos[0]-prev[0];
+  dir[1]=pos[1]-prev[1];
+
+  path[0]=targ[0]-pos[0];
+  path[1]=targ[1]-pos[1];
+
+
+
+  // delay(500);
 
 }
 
@@ -643,7 +732,7 @@ void IR()
     }      
     
 
-        }
+}
   
 int calibration(){
 
@@ -692,54 +781,54 @@ int calibration(){
 
 
 void NAV(){
-Serial.println("NAV1");  
+  Serial.println("NAV1");  
 
-if (NEW_CARD==0 ) {
-  delay(50);
-  return;
-}
+  if (NEW_CARD==0 ) {
+    delay(50);
+    return;
+  }
 
-Serial.println("NAV2");
-  if ((done_flag == 1) && (at_targ == 1))   //moving out of place after pickup or delivery
-  {
-    back();
-    _delay_ms(spin_delay);
-
-    if (path[0] > 0)    // rotate left 90 degree
+  Serial.println("NAV2");
+    if ((done_flag == 1) && (at_targ == 1))   //moving out of place after pickup or delivery
     {
-      spinL();
+      back();
       _delay_ms(spin_delay);
 
-    }
-
-    else if (path[0] < 0)      //rotate right 90 degree
-    {
-      spinR();
-      _delay_ms(spin_delay);
-    }
-
-    else if (path[0] == 0)   //for cases where target is on the same x-line as position
-    {
-      if (pos[0]==2 || pos[0]==3)
-      {
-        spinR();
-      _delay_ms(spin_delay);
-      }
-
-      else if (pos[0] == 4)
+      if (path[0] > 0)    // rotate left 90 degree
       {
         spinL();
-      _delay_ms(spin_delay);
+        _delay_ms(spin_delay);
+
       }
 
+      else if (path[0] < 0)      //rotate right 90 degree
+      {
+        spinR();
+        _delay_ms(spin_delay);
+      }
 
-    }
+      else if (path[0] == 0)   //for cases where target is on the same x-line as position
+      {
+        if (pos[0]==2 || pos[0]==3)
+        {
+          spinR();
+        _delay_ms(spin_delay);
+        }
 
-  
-    forward();
-   _delay_ms(spin_delay);
+        else if (pos[0] == 4)
+        {
+          spinL();
+        _delay_ms(spin_delay);
+        }
 
-   at_targ=0;
+
+      }
+
+    
+      forward();
+    _delay_ms(spin_delay);
+
+    at_targ=0;
   }
 
 
@@ -905,7 +994,9 @@ Serial.println("NAV2");
       Serial.println("at target");
       _delay_ms(spin_delay);
       stop();
-      _delay_ms(10000);
+      _delay_ms(1000);
+      nos_fat7a_no_box();
+      delay(1000);
       Serial.println("done rotating");
       //while(distance < 7);
       //stop();
@@ -913,7 +1004,7 @@ Serial.println("NAV2");
     }
 
   }
-NEW_CARD=0;
+  NEW_CARD=0;
   
 }
 void database_comm(){
@@ -936,8 +1027,229 @@ void database_comm(){
     targ[0]=xpos;
     targ[1]=ypos;
     targ[2]=zpos;
+  }
 }
+void nos_fat7a_box()
+{
+  
+  middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+
+  scissorsup();
+
+
+  while (middle_S_S == HIGH) {
+    middle_S_S = digitalRead(middle_S);
+  }
+
+
+  scissorsoff();
+  delay(1000);
+
+  gripperon();
+
+  while (open_G_S == HIGH) {
+    open_G_S = digitalRead(open_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  pumpON();
+  delay(3000);
+  pumpOFF();
+  delay(1000);
+
+  gripperback();
+
+  while (closed_G_S == HIGH) {
+    closed_G_S = digitalRead(closed_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  
+  scissorsdown();
+
+  while (closed_S_S == HIGH) {
+  closed_S_S = digitalRead(closed_S);
+  }
+
+  
+  scissorsoff();
+  box_flag=1;
 }
+
+
+void fat7a_box()
+{
+  // middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+
+  scissorsup();
+
+
+  while (open_S_S == HIGH ) {
+    open_S_S = digitalRead(open_S);
+  }
+
+
+  scissorsoff();
+  delay(1000);
+
+  gripperon();
+
+  while (open_G_S == HIGH) {
+    open_G_S = digitalRead(open_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  pumpON();
+  delay(3000);
+  pumpOFF();
+  delay(1000);
+
+  gripperback();
+
+  while (closed_G_S == HIGH) {
+    closed_G_S = digitalRead(closed_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  
+  scissorsdown();
+
+  while (closed_S_S == HIGH) {
+  closed_S_S = digitalRead(closed_S);
+  }
+
+  
+  scissorsoff();
+  box_flag=1;
+
+}
+
+void nos_fat7a_no_box()
+{
+  
+  middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+
+  scissorsup();
+
+
+  while (middle_S_S == HIGH) {
+    middle_S_S = digitalRead(middle_S);
+  }
+
+
+  scissorsoff();
+  delay(1000);
+
+  gripperon();
+
+  while (open_G_S == HIGH) {
+    open_G_S = digitalRead(open_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  gripperback();
+
+  while (closed_G_S == HIGH) {
+    closed_G_S = digitalRead(closed_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  
+  scissorsdown();
+
+  while (closed_S_S == HIGH) {
+  closed_S_S = digitalRead(closed_S);
+  }
+
+  
+  scissorsoff();
+  box_flag=0;
+}
+
+
+void fat7a_no_box()
+{
+  // middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+
+  scissorsup();
+
+
+  while (open_S_S == HIGH) {
+    open_S_S = digitalRead(open_S);
+  }
+
+
+  scissorsoff();
+  delay(1000);
+
+  gripperon();
+
+  while (open_G_S == HIGH) {
+    open_G_S = digitalRead(open_G);
+  }
+
+  gripperoff();
+
+  delay(1000);
+
+  gripperback();
+
+  while (closed_G_S == HIGH) {
+    closed_G_S = digitalRead(closed_G);
+  }
+
+  gripperoff();
+  delay(1000); 
+
+  
+  scissorsdown();
+
+  while (closed_S_S == HIGH) {
+  closed_S_S = digitalRead(closed_S);
+  }
+
+  
+  scissorsoff();
+  box_flag=0;
+
+}
+
 // float getDistance() {
 //   digitalWrite(trig, LOW);
 //   delayMicroseconds(5);

@@ -108,12 +108,18 @@ void IR();
 int calibration();
 void NAV();
 void database_comm();
-void nos_fat7a_box();
-void nos_fat7a_no_box();
-void fat7a_box();
-void fat7a_no_box();
+void fun_scissors_up();
+void fun_scissors_half_up();
+void fun_scissors_down();
+void fun_gripper_ext();
+void fun_gripper_ret();
+void pump_holding();
 void cvarduino();
 float getDistance();
+void hold_full();
+void hold_half();
+void leave_full();
+void leave_half();
 
 
 double Setpoint = 2500;
@@ -244,11 +250,12 @@ void loop() {
               forward();
             }
           }
-         // nos_fat7a_box();
-         box_flag=1;
           
-  //   break;   
+          hold_half();
+          
     }
+
+
   else if((pos[0]==2)&&(pos[1]==1) && (box_flag==1)){
     if(first_time_db==1){
       Serial.write('d');
@@ -256,26 +263,23 @@ void loop() {
       first_time_cv=1;
 
     }
-      
       database_comm();
   }
   
-  
+  // Serial.println("target: ");
+  // Serial.println(targ[0]);
+  // Serial.println("zzzzzzzzzzzzzzzzzzz");
+  // Serial.println(targ[1]);
   
    
   IR();
-
   //implementing the RFID
   RFID();
 
   //implementing the navigation
   NAV();
-  // while(1){
-  
-  // }
-  // else if(path[0]==0 && path[1]==0 && box_flag==1){
-  //   fat7a_no_box();
-  // }
+
+
 }
 
 
@@ -719,7 +723,7 @@ void RFID()
 
 void IR()
 {  
-  
+
   // Read the sensor values and print the first sensor value for debugging
     qtr.read(sensorValues);
     // Serial.println(sensorValues[0]);
@@ -734,9 +738,10 @@ void IR()
 
     // Check if all sensors read a low value indicating no line detected
     bool noLineDetected = true;
-    for (uint8_t i = 0; i < SensorCount; i++) {
+    for (int i = 0; i < SensorCount; i++) {
         if (sensorValues[i] > 200) { // Adjust the threshold value as needed
             noLineDetected = false;
+            Serial.println("no line detected = false");
             break;
         }
     }
@@ -746,6 +751,7 @@ void IR()
       
         // Serial.println("No line detected, moving forward.");
         forward();
+        Serial.println("no line detected truueee");
     }
     // Otherwise, adjust the direction based on the PID output
     else {
@@ -763,7 +769,6 @@ void IR()
         }
     }      
     
-
 }
   
 int calibration(){
@@ -1027,7 +1032,7 @@ void NAV(){
       _delay_ms(spin_delay);
       stop();
       _delay_ms(1000);
-      nos_fat7a_no_box();
+      leave_half();
       delay(1000);
       // Serial.println("done rotating");
       //while(distance < 7);
@@ -1061,226 +1066,7 @@ void database_comm(){
     targ[2]=zpos;
   }
 }
-void nos_fat7a_box()
-{
-  
-  middle_S_S = digitalRead(middle_S);
-  open_S_S = digitalRead(open_S);
-  closed_S_S = digitalRead(closed_S);
 
-  open_G_S = digitalRead(open_G);
-  closed_G_S = digitalRead(closed_G);
-
-
-  scissorsup();
-
-
-  while (middle_S_S == HIGH) {
-    middle_S_S = digitalRead(middle_S);
-  }
-
-
-  scissorsoff();
-  delay(1000);
-
-  gripperon();
-
-  while (open_G_S == HIGH) {
-    open_G_S = digitalRead(open_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  pumpON();
-  delay(3000);
-  pumpOFF();
-  delay(1000);
-
-  gripperback();
-
-  while (closed_G_S == HIGH) {
-    closed_G_S = digitalRead(closed_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  
-  scissorsdown();
-
-  while (closed_S_S == HIGH) {
-  closed_S_S = digitalRead(closed_S);
-  }
-
-  
-  scissorsoff();
-  box_flag=1;
-}
-
-
-void fat7a_box()
-{
-  // middle_S_S = digitalRead(middle_S);
-  open_S_S = digitalRead(open_S);
-  closed_S_S = digitalRead(closed_S);
-
-  open_G_S = digitalRead(open_G);
-  closed_G_S = digitalRead(closed_G);
-
-
-  scissorsup();
-
-
-  while (open_S_S == HIGH ) {
-    open_S_S = digitalRead(open_S);
-  }
-
-
-  scissorsoff();
-  delay(1000);
-
-  gripperon();
-
-  while (open_G_S == HIGH) {
-    open_G_S = digitalRead(open_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  pumpON();
-  delay(3000);
-  pumpOFF();
-  delay(1000);
-
-  gripperback();
-
-  while (closed_G_S == HIGH) {
-    closed_G_S = digitalRead(closed_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  
-  scissorsdown();
-
-  while (closed_S_S == HIGH) {
-  closed_S_S = digitalRead(closed_S);
-  }
-
-  
-  scissorsoff();
-  box_flag=1;
-
-}
-
-void nos_fat7a_no_box()
-{
-  
-  middle_S_S = digitalRead(middle_S);
-  open_S_S = digitalRead(open_S);
-  closed_S_S = digitalRead(closed_S);
-
-  open_G_S = digitalRead(open_G);
-  closed_G_S = digitalRead(closed_G);
-
-
-  scissorsup();
-
-
-  while (middle_S_S == HIGH) {
-    middle_S_S = digitalRead(middle_S);
-  }
-
-
-  scissorsoff();
-  delay(1000);
-
-  gripperon();
-
-  while (open_G_S == HIGH) {
-    open_G_S = digitalRead(open_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  gripperback();
-
-  while (closed_G_S == HIGH) {
-    closed_G_S = digitalRead(closed_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  
-  scissorsdown();
-
-  while (closed_S_S == HIGH) {
-  closed_S_S = digitalRead(closed_S);
-  }
-
-  
-  scissorsoff();
-  box_flag=0;
-}
-
-
-void fat7a_no_box()
-{
-  // middle_S_S = digitalRead(middle_S);
-  open_S_S = digitalRead(open_S);
-  closed_S_S = digitalRead(closed_S);
-
-  open_G_S = digitalRead(open_G);
-  closed_G_S = digitalRead(closed_G);
-
-
-  scissorsup();
-
-
-  while (open_S_S == HIGH) {
-    open_S_S = digitalRead(open_S);
-  }
-
-
-  scissorsoff();
-  delay(1000);
-
-  gripperon();
-
-  while (open_G_S == HIGH) {
-    open_G_S = digitalRead(open_G);
-  }
-
-  gripperoff();
-
-  delay(1000);
-
-  gripperback();
-
-  while (closed_G_S == HIGH) {
-    closed_G_S = digitalRead(closed_G);
-  }
-
-  gripperoff();
-  delay(1000); 
-
-  
-  scissorsdown();
-
-  while (closed_S_S == HIGH) {
-  closed_S_S = digitalRead(closed_S);
-  }
-
-  
-  scissorsoff();
-  box_flag=0;
-
-}
 float getDistance() {
   // Clear the trigPin by setting it LOW
   digitalWrite(trigPin, LOW);
@@ -1301,3 +1087,149 @@ float getDistance() {
 
   return distance;
 }
+
+
+
+void fun_scissors_up()
+{
+  middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  while(open_S_S == 1)
+  {
+    open_S_S = digitalRead(open_S);
+    scissorsup();
+  }
+
+  scissorsoff();
+
+}
+
+void fun_scissors_half_up()
+{
+  middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  while(middle_S_S == 1)
+  {
+    middle_S_S = digitalRead(middle_S);
+    scissorsup();
+  }
+
+  scissorsoff();
+
+}
+
+
+
+void fun_scissors_down()
+{
+  middle_S_S = digitalRead(middle_S);
+  open_S_S = digitalRead(open_S);
+  closed_S_S = digitalRead(closed_S);
+
+  while(closed_S_S == 1)
+  {
+    scissorsdown();
+    closed_S_S = digitalRead(closed_S);
+
+  }
+
+  scissorsoff();
+
+}
+
+void fun_gripper_ext()
+{
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+  while(open_G_S == 1)
+  {
+    open_G_S = digitalRead(open_G);
+    gripperon();
+  }
+
+  gripperoff();
+
+}
+
+void fun_gripper_ret()
+{
+  open_G_S = digitalRead(open_G);
+  closed_G_S = digitalRead(closed_G);
+
+  while(closed_G_S == 1)
+  {
+   closed_G_S = digitalRead(closed_G);
+   gripperback();
+  }
+
+  gripperoff();
+
+}
+
+void pump_holding()
+{
+  pumpON();
+  _delay_ms(3000);
+  pumpOFF();
+  _delay_ms(1000);
+
+}
+
+void hold_full()
+{
+  fun_scissors_up();
+  fun_gripper_ext();
+  pump_holding();
+  fun_gripper_ret();
+  fun_scissors_down();
+
+  box_flag=1;
+          
+}
+
+
+void hold_half()
+{
+  fun_scissors_half_up();
+  _delay_ms(50);
+  fun_gripper_ext();
+  _delay_ms(50);
+  pump_holding();
+  _delay_ms(50);
+  fun_gripper_ret();
+  _delay_ms(50);
+  fun_scissors_down();
+  _delay_ms(50);
+
+  box_flag=1;
+          
+}
+
+
+void leave_full()
+{
+  fun_scissors_up();
+  fun_gripper_ext();
+  fun_gripper_ret();
+  fun_scissors_down();
+
+  box_flag=0;
+          
+}
+
+void leave_half()
+{
+  fun_scissors_half_up();
+  fun_gripper_ext();
+  fun_gripper_ret();
+  fun_scissors_down();
+
+  box_flag=0;
+          
+}
+

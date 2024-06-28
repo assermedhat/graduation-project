@@ -228,11 +228,8 @@ void setup() {
 
 
 void loop() {
+  distance = getDistance();
 
-  Serial.println("done_flag= ");
-  Serial.println(done_flag);
-  Serial.println("at_target= ");
-  Serial.println(at_target);
 
   if((pos[0]==2)&&(pos[1]==1) && (box_flag==0)) {
           if(first_time_cv==1){
@@ -261,15 +258,15 @@ void loop() {
     }
 
 
-  // else if((pos[0]==2)&&(pos[1]==1) && (box_flag==1)){
-  //   if(first_time_db==1){
-  //     Serial.write('d');
-  //     first_time_db=0;
-  //     first_time_cv=1;
+  else if((pos[0]==2)&&(pos[1]==1) && (box_flag==1)){
+    if(first_time_db==1){
+      Serial.write('d');
+      first_time_db=0;
+      first_time_cv=1;
 
-  //   }
-  //     database_comm();
-  // }
+    }
+      database_comm();
+  }
   
   // Serial.println("target: ");
   // Serial.println(targ[0]);
@@ -289,6 +286,13 @@ void loop() {
     Out_of_Shelves();  
   }
 
+
+  if ((at_target == 1) && (distance <= 5.0))
+  {
+    leave_half();
+    delay(spin_delay);
+
+  }
 
 }
 
@@ -1029,10 +1033,10 @@ void NAV(){
       spinR();
       Serial.println("at target");
       _delay_ms(spin_delay);
-      forward();
-      _delay_ms(spin_delay);
-      leave_half();
-      delay(spin_delay);
+      // forward();
+      // _delay_ms(spin_delay);
+      // leave_half();
+      // delay(spin_delay);
       at_target=1;
     }
 
@@ -1041,10 +1045,10 @@ void NAV(){
       spinL();
       Serial.println("at target");
       _delay_ms(spin_delay);
-      forward();
-      _delay_ms(spin_delay);
-      leave_half();
-      delay(spin_delay);
+      // forward();
+      // _delay_ms(spin_delay);
+      // leave_half();
+      // delay(spin_delay);
       at_target=1;
     }
 
@@ -1052,6 +1056,8 @@ void NAV(){
   NEW_CARD=0;
   
 }
+
+
 void database_comm(){
   if (Serial.available()) {
     String data = Serial.readStringUntil('\n');
@@ -1067,6 +1073,8 @@ void database_comm(){
     targ[2]=zpos;
   }
 }
+
+
 
 float getDistance() {
   // Clear the trigPin by setting it LOW

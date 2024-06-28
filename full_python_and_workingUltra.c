@@ -20,8 +20,8 @@ int path[2];
 bool box_flag = 0;   // 0 then there is no box, 1 there is box
 
 bool NEW_CARD;
-bool done_flag=0; //flags when the robot has done pick up or delivery from/to shelf
-bool at_targ=0;   //flags when in target position 
+int done_flag=0; //flags when the robot has done pick up or delivery from/to shelf
+int at_target=0;   //flags when in target position 
 
 const int trigPin = 42; // Pin connected to Trig pin of the ultrasonic sensor
 const int echoPin = 44; // Pin connected to Echo pin of the ultrasonic sensor
@@ -120,6 +120,7 @@ void hold_full();
 void hold_half();
 void leave_full();
 void leave_half();
+void Out_of_Shelves();  
 
 
 double Setpoint = 2500;
@@ -217,8 +218,8 @@ void setup() {
   pos[0]=2;
   pos[1]=1;
   
-  targ[0]=4;
-  targ[1]=3;
+  targ[0]=3;
+  targ[1]=2;
 
   distance = 6.0;
 
@@ -228,6 +229,10 @@ void setup() {
 
 void loop() {
 
+  Serial.println("done_flag= ");
+  Serial.println(done_flag);
+  Serial.println("at_target= ");
+  Serial.println(at_target);
 
   if((pos[0]==2)&&(pos[1]==1) && (box_flag==0)) {
           if(first_time_cv==1){
@@ -256,15 +261,15 @@ void loop() {
     }
 
 
-  else if((pos[0]==2)&&(pos[1]==1) && (box_flag==1)){
-    if(first_time_db==1){
-      Serial.write('d');
-      first_time_db=0;
-      first_time_cv=1;
+  // else if((pos[0]==2)&&(pos[1]==1) && (box_flag==1)){
+  //   if(first_time_db==1){
+  //     Serial.write('d');
+  //     first_time_db=0;
+  //     first_time_cv=1;
 
-    }
-      database_comm();
-  }
+  //   }
+  //     database_comm();
+  // }
   
   // Serial.println("target: ");
   // Serial.println(targ[0]);
@@ -278,6 +283,11 @@ void loop() {
 
   //implementing the navigation
   NAV();
+
+  if ((done_flag == 1) && (at_target == 1))   //moving out of place after pickup or delivery
+  {
+    Out_of_Shelves();  
+  }
 
 
 }
@@ -303,20 +313,20 @@ void turnR()
 }
 
 void turnL()
- {
-    analogWrite(RPWM, MAX);
-    analogWrite(LPWM,MIN);
+{
+  analogWrite(RPWM, MAX);
+  analogWrite(LPWM,MIN);
 
-    analogWrite(RPWM2, MIN);
-    analogWrite(LPWM2,MIN);
+  analogWrite(RPWM2, MIN);
+  analogWrite(LPWM2,MIN);
 
-    analogWrite(RPWMS, MIN);
-    analogWrite(LPWMS,MIN);
+  analogWrite(RPWMS, MIN);
+  analogWrite(LPWMS,MIN);
 
-    digitalWrite(MotorGripper1, LOW);
-    digitalWrite(MotorGripper2, LOW);
+  digitalWrite(MotorGripper1, LOW);
+  digitalWrite(MotorGripper2, LOW);
 
-     digitalWrite(pump,LOW);
+  digitalWrite(pump,LOW);
 
 }
 
@@ -324,10 +334,10 @@ void turnL()
 void back()
  {
     analogWrite(RPWM, MIN);
-    analogWrite(LPWM, MAX);
+    analogWrite(LPWM, 0.5*MAX);
 
     analogWrite(RPWM2, MIN);
-    analogWrite(LPWM2, MAX);
+    analogWrite(LPWM2, 0.5*MAX);
 
     analogWrite(RPWMS, MIN);
     analogWrite(LPWMS,MIN);
@@ -408,7 +418,7 @@ void scissorsdown()
   digitalWrite(MotorGripper1, LOW);
   digitalWrite(MotorGripper2, LOW);
 
-   digitalWrite(pump,LOW);
+  digitalWrite(pump,LOW);
 }
 void scissorsoff()
 {
@@ -741,7 +751,6 @@ void IR()
     for (int i = 0; i < SensorCount; i++) {
         if (sensorValues[i] > 200) { // Adjust the threshold value as needed
             noLineDetected = false;
-            Serial.println("no line detected = false");
             break;
         }
     }
@@ -751,7 +760,6 @@ void IR()
       
         // Serial.println("No line detected, moving forward.");
         forward();
-        Serial.println("no line detected truueee");
     }
     // Otherwise, adjust the direction based on the PID output
     else {
@@ -815,19 +823,10 @@ int calibration(){
   return 1;
 }
 
+void Out_of_Shelves()
+{
+   Serial.println("inn moving outtttt");
 
-
-void NAV(){
-  // Serial.println("NAV1");  
-
-  if (NEW_CARD==0 ) {
-    delay(50);
-    return;
-  }
-
-  // Serial.println("NAV2");
-    if ((done_flag == 1) && (at_targ == 1))   //moving out of place after pickup or delivery
-    {
       back();
       _delay_ms(spin_delay);
 
@@ -863,11 +862,22 @@ void NAV(){
 
     
       forward();
-    _delay_ms(spin_delay);
+      _delay_ms(spin_delay);
 
-    at_targ=0;
+      at_target=0;
+
+
+}
+
+void NAV(){
+  // Serial.println("NAV1");  
+
+  if (NEW_CARD==0 ) {
+    delay(50);
+    return;
   }
 
+  
 
   // if (pos[0]%4 == 1)   //at nodes looking in X-direction
   // {
@@ -1017,12 +1027,13 @@ void NAV(){
     if (dir[0] > 0)
     {
       spinR();
+      Serial.println("at target");
       _delay_ms(spin_delay);
-      stop();
-      _delay_ms(10000);
-      //while(distance < 7);
-      //stop();
-      at_targ=1;
+      forward();
+      _delay_ms(spin_delay);
+      leave_half();
+      delay(spin_delay);
+      at_target=1;
     }
 
     else if (dir[0] < 0)
@@ -1030,14 +1041,11 @@ void NAV(){
       spinL();
       Serial.println("at target");
       _delay_ms(spin_delay);
-      stop();
-      _delay_ms(1000);
+      forward();
+      _delay_ms(spin_delay);
       leave_half();
-      delay(1000);
-      // Serial.println("done rotating");
-      //while(distance < 7);
-      //stop();
-      at_targ=1;
+      delay(spin_delay);
+      at_target=1;
     }
 
   }
@@ -1053,14 +1061,7 @@ void database_comm(){
     data.remove(0, data.indexOf(',') + 1);
     int zpos = data.toInt();
     
-    //Do something with xpos, ypos, zpos
-    //For example, print them to Serial Monitor
-    // Serial.print("Received X pos: ");
-    // Serial.println(xpos);
-    // Serial.print("Received Y pos: ");
-    // Serial.println(ypos);
-    // // Serial.print("Received Z pos: ");
-    // Serial.println(zpos);
+ 
     targ[0]=xpos;
     targ[1]=ypos;
     targ[2]=zpos;
@@ -1121,8 +1122,6 @@ void fun_scissors_half_up()
   scissorsoff();
 
 }
-
-
 
 void fun_scissors_down()
 {
@@ -1219,6 +1218,7 @@ void leave_full()
   fun_scissors_down();
 
   box_flag=0;
+  done_flag=1;
           
 }
 
@@ -1230,6 +1230,7 @@ void leave_half()
   fun_scissors_down();
 
   box_flag=0;
+  done_flag=1;
+
           
 }
-

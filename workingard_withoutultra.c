@@ -249,7 +249,6 @@ distance = ultrasonic.read();
     }
   else if((pos[0]==4)&&(pos[1]==1)){
     if(first_time_db==1){
-      // Serial.println("kosomak");
       Serial.write('d');
       first_time_db=0;
       first_time_cv=1;
